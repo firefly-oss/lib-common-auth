@@ -37,13 +37,12 @@ public class AuthAutoConfiguration {
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
-                .csrf().disable()
-                .httpBasic().disable()
-                .formLogin().disable()
-                .logout().disable()
-                .authorizeExchange()
-                .anyExchange().permitAll()
-                .and()
+                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
+                .logout(ServerHttpSecurity.LogoutSpec::disable)
+                .authorizeExchange(authorizeExchange -> authorizeExchange
+                        .anyExchange().permitAll())
                 .build();
     }
 
