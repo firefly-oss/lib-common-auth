@@ -80,7 +80,7 @@ The following diagram shows the main components of the Firefly Authorization Lib
 │ │  │  │ @RequiresRole   │     │    │                                    │      │  │ │
 │ │  │  │ @RequiresScope  │     │    │ ┌────────────────────────────────┐ │      │  │ │
 │ │  │  │ @PreAuthorize   │     │    │ │ - getPartyId()                 │ │      │  │ │
-│ │  │  │ @CheckAccess    │     │    │ │ - getEmployeeId()              │ │      │  │ │
+│ │  │  │                 │     │    │ │ - getEmployeeId()              │ │      │  │ │
 │ │  │  │ @RequiresOwner  │     │    │ │ - getRoles(), getScopes()      │ │      │  │ │
 │ │  │  └────────┬────────┘     │    │ │ - isAdmin(), isCustomer(), etc.│ │      │  │ │
 │ │  │           │              │    │ └────────────────────────────────┘ │      │  │ │
@@ -220,7 +220,7 @@ The following diagram shows the main classes and interfaces in the Firefly Autho
 │ + checkOwnership()    │
 │ + checkExpression()   │
 │ + preAuthorize()      │
-│ + checkAccess()       │
+│                      │
 └───────────┬───────────┘
             │
             │ uses
@@ -269,12 +269,11 @@ The following diagram shows the main classes and interfaces in the Firefly Autho
 │ + resource()           │      │ + value()             │      │ + value()             │
 │ + paramIndex()         │      └───────────────────────┘      └───────────────────────┘
 │ + paramName()          │
-│ + accessType()         │      ┌───────────────────────┐      ┌───────────────────────┐
-│ + bypassForBackoffice()│      │     «annotation»      │      │     «annotation»      │
-└────────────────────────┘      │     @CheckAccess      │      │  @AccessValidatorFor  │
-                                ├───────────────────────┤      ├───────────────────────┤
-                                │ + resource()          │      │ + value()             │
-                                │ + idParam()           │      └───────────────────────┘
+│ + accessType()         │      ┌───────────────────────┐
+│ + bypassForBackoffice()│      │     «annotation»      │
+└────────────────────────┘      │  @AccessValidatorFor  │
+                                ├───────────────────────┤
+                                │ + value()             │
                                 └───────────────────────┘
 ```
 
@@ -314,7 +313,6 @@ The library provides a comprehensive set of annotations for securing methods wit
    - `@RequiresOwnership`: Requires the user to be the owner of the resource
    - `@RequiresExpression`: Requires a custom SpEL expression to evaluate to true
    - `@PreAuthorize`: Similar to Spring Security's @PreAuthorize but works with reactive code
-   - `@CheckAccess`: Legacy annotation for backward compatibility
 
 2. **Annotation Processing**: The `SecurityInterceptor` intercepts method calls to methods annotated with security annotations:
    - Gets the current AuthInfo from the ReactiveSecurityContextHolder
@@ -333,7 +331,7 @@ The library provides a pluggable/extensible validation mechanism for checking if
    - The `@AccessValidatorFor` annotation specifies the resource type that the validator is responsible for
    - The `AccessValidatorRegistry` manages the validators and provides a way to look them up by resource type
 
-2. **Ownership Validation**: When a method annotated with `@RequiresOwnership` or `@CheckAccess` is called:
+2. **Ownership Validation**: When a method annotated with `@RequiresOwnership` is called:
    - The `SecurityInterceptor` extracts the resource ID from the method parameters
    - It calls the `AccessValidationService` to validate ownership
    - The `AccessValidationService` gets the validator for the resource type from the `AccessValidatorRegistry`
@@ -377,7 +375,6 @@ The library provides a pluggable/extensible validation mechanism for checking if
   - **@RequiresOwnership**: Requires the user to be the owner of the resource.
   - **@RequiresExpression**: Requires a custom SpEL expression to evaluate to true.
   - **@PreAuthorize**: Similar to Spring Security's @PreAuthorize but works with reactive code.
-  - **@CheckAccess**: Legacy annotation for backward compatibility.
 
 - **SecurityInterceptor**: Intercepts methods annotated with security annotations and enforces security rules.
   - Supports different types of access control (role-based, scope-based, ownership-based, expression-based).
@@ -636,15 +633,14 @@ public class ContractService {
 }
 ```
 
-#### Legacy access control (backward compatibility)
+#### Resource ownership validation
 
 ```java
-import com.catalis.common.auth.annotation.CheckAccess;
 import reactor.core.publisher.Mono;
 
 public class ContractService {
 
-    @CheckAccess(resource = "contract", idParam = "contractId")
+    @RequiresOwnership(resource = "contract", paramName = "contractId")
     public Mono<Contract> getContractById(String contractId) {
         // This method will only be executed if the current user has access to the contract
         return contractRepository.findById(contractId);
@@ -670,7 +666,7 @@ The Firefly Authorization Library provides several security annotations that can
 
 Here's a guide to help you choose the right annotation for your needs:
 
-1. **Resource Ownership Annotations** (`@RequiresOwnership` and `@CheckAccess`):
+1. **Resource Ownership Annotations** (`@RequiresOwnership`):
    - **Use when**: You need to restrict access to resources based on ownership (e.g., a user can only access their own data).
    - **Best for**: Entity-specific access control where ownership matters.
    - **Examples**: Customer accessing their own contracts, accounts, or payments.
@@ -697,13 +693,12 @@ Here's a guide to help you choose the right annotation for your needs:
 | Restrict access based on OAuth2 scope | `@RequiresScope` | Simple scope-based check without custom validators |
 | Combine multiple access conditions | `@PreAuthorize` | Flexible expression language with built-in functions |
 | Implement complex custom logic | `@RequiresExpression` | Full access to SpEL for custom authorization rules |
-| Support legacy code | `@CheckAccess` | Backward compatibility with older code |
 
 ##### How Annotations Interact with Validators
 
-###### Resource Ownership Annotations (`@RequiresOwnership` and `@CheckAccess`)
+###### Resource Ownership Annotations (`@RequiresOwnership`)
 
-When you use `@RequiresOwnership` or `@CheckAccess` on a method, the following happens:
+When you use `@RequiresOwnership` on a method, the following happens:
 
 1. The method call is intercepted by the `SecurityInterceptor` or `AccessControlAspect`.
 2. The interceptor extracts the resource type and resource ID from the annotation and method parameters.
@@ -853,7 +848,7 @@ Let's break down the steps:
 
 #### Using Your Custom Validator
 
-Once you've created your custom validator, you can use it with the `@RequiresOwnership` or `@CheckAccess` annotations:
+Once you've created your custom validator, you can use it with the `@RequiresOwnership` annotation:
 
 ```java
 @RequiresOwnership(resource = "payment", paramName = "paymentId")
@@ -999,7 +994,7 @@ This auto-discovery mechanism means you don't need to manually register your val
 
 1. **Validator not found**: If you get an error saying "No validator found for resource type X", make sure:
    - Your validator class is annotated with `@Component` and `@AccessValidatorFor("X")`.
-   - The resource type in the annotation matches the one you're using in the `@RequiresOwnership` or `@CheckAccess` annotation.
+   - The resource type in the annotation matches the one you're using in the `@RequiresOwnership` annotation.
    - Your validator class is in a package that's scanned by Spring.
 
 2. **Access denied unexpectedly**: If access is being denied when it should be granted, check:
@@ -1008,7 +1003,7 @@ This auto-discovery mechanism means you don't need to manually register your val
    - The user has the expected roles and authorities.
 
 3. **Validator not being called**: If your validator isn't being called at all, check:
-   - The method is annotated with `@RequiresOwnership` or `@CheckAccess` with the correct resource type.
+   - The method is annotated with `@RequiresOwnership` with the correct resource type.
    - The aspect is being applied (check for AOP configuration issues).
    - The method is being called through a proxy (direct calls to methods within the same class bypass AOP).
 
@@ -1016,29 +1011,6 @@ By following this tutorial, you should be able to create custom validators for y
 
 ## Migration Guide
 
-### Migrating from @CheckAccess to the new annotations
-
-The `@CheckAccess` annotation is still supported for backward compatibility, but we recommend migrating to the new annotations for better flexibility and expressiveness.
-
-Here's how to migrate from `@CheckAccess` to the new annotations:
-
-#### Before
-
-```java
-@CheckAccess(resource = "contract", idParam = "contractId")
-public Mono<Contract> getContractById(String contractId) {
-    return contractRepository.findById(contractId);
-}
-```
-
-#### After (using @RequiresOwnership)
-
-```java
-@RequiresOwnership(resource = "contract", paramName = "contractId")
-public Mono<Contract> getContractById(String contractId) {
-    return contractRepository.findById(contractId);
-}
-```
 
 #### After (using @PreAuthorize)
 
@@ -1298,26 +1270,6 @@ public Mono<Contract> getContractById(String contractId) {
 - Can be applied at both method and class level
 - Use the built-in functions: hasRole, hasAnyRole, hasScope, hasAnyScope, isOwner
 
-#### @CheckAccess (Legacy)
-
-**Purpose**: Legacy annotation for backward compatibility. Requires the user to have access to a resource.
-
-**Parameters**:
-- `resource`: The type of resource being accessed (e.g., "contract", "account")
-- `idParam`: The name of the parameter that contains the resource ID
-
-**Usage**:
-```java
-@CheckAccess(resource = "contract", idParam = "contractId")
-public Mono<Contract> getContractById(String contractId) {
-    // Only the owner of the contract or employees can access this method
-    return contractRepository.findById(contractId);
-}
-```
-
-**Best Practices**:
-- Use @RequiresOwnership instead for new code
-- Only use for backward compatibility with existing code
 
 ### Validator Annotations
 
@@ -1715,7 +1667,7 @@ public class CustomOpenAPIConfiguration {
 
 1. **Missing required headers**: Ensure that your API Gateway or Istio configuration correctly injects the required headers (X-Party-ID, X-Employee-ID, X-Service-Account-ID, X-Auth-Roles, X-Auth-Scopes).
 
-2. **Incorrect parameter names**: When using `@RequiresOwnership` or `@CheckAccess`, ensure that the parameter name or index is correct. Incorrect parameter references will result in runtime errors.
+2. **Incorrect parameter names**: When using `@RequiresOwnership`, ensure that the parameter name or index is correct. Incorrect parameter references will result in runtime errors.
 
 3. **Complex SpEL expressions**: Avoid overly complex SpEL expressions in `@RequiresExpression` or `@PreAuthorize` annotations. Complex expressions are harder to test and maintain.
 
@@ -1748,7 +1700,7 @@ public class CustomOpenAPIConfiguration {
 
 #### Parameter Not Found
 
-**Issue**: When using @RequiresOwnership or @CheckAccess, you get an error saying the parameter was not found.
+**Issue**: When using @RequiresOwnership, you get an error saying the parameter was not found.
 
 **Solution**:
 - Ensure the parameter name or index specified in the annotation matches the method parameter.
