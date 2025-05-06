@@ -1,6 +1,11 @@
 package com.catalis.common.auth.aspect;
 
-import com.catalis.common.auth.annotation.*;
+import com.catalis.common.auth.annotation.PreAuthorize;
+import com.catalis.common.auth.annotation.RequiresExpression;
+import com.catalis.common.auth.annotation.RequiresOwnership;
+import com.catalis.common.auth.annotation.RequiresRole;
+import com.catalis.common.auth.annotation.RequiresScope;
+import com.catalis.common.auth.annotation.Secured;
 import com.catalis.common.auth.model.AuthInfo;
 import com.catalis.common.auth.service.AccessValidationService;
 import lombok.RequiredArgsConstructor;
@@ -272,72 +277,6 @@ public class SecurityInterceptor {
                     } catch (Throwable e) {
                         return Mono.error(e);
                     }
-                });
-    }
-
-    /**
-     * Intercepts methods annotated with @CheckAccess for backward compatibility.
-     */
-    @Around("@annotation(com.catalis.common.auth.annotation.CheckAccess)")
-    public Object checkAccess(ProceedingJoinPoint joinPoint) throws Throwable {
-        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        Method method = signature.getMethod();
-
-        CheckAccess checkAccess = method.getAnnotation(CheckAccess.class);
-        final String resourceType = checkAccess.resource();
-        final String idParamName = checkAccess.idParam();
-
-        // Get method parameters
-        final Parameter[] parameters = method.getParameters();
-        final Object[] args = joinPoint.getArgs();
-
-        // Find the parameter with the specified name
-        String resourceId = null;
-        for (int i = 0; i < parameters.length; i++) {
-            if (parameters[i].getName().equals(idParamName)) {
-                resourceId = args[i].toString();
-                break;
-            }
-        }
-
-        if (resourceId == null) {
-            log.error("Parameter with name '{}' not found in method {}", idParamName, method.getName());
-            throw new IllegalArgumentException("Parameter with name '" + idParamName + "' not found");
-        }
-
-        final String finalResourceId = resourceId;
-
-        // Get current AuthInfo
-        return AuthInfo.getCurrent()
-                .flatMap(authInfo -> {
-                    log.debug("Checking access for resource type: {}, resourceId: {}, user: {}", resourceType, finalResourceId, authInfo.getPartyId());
-
-                    // Validate access
-                    return accessValidationService.validateAccess(resourceType, finalResourceId, authInfo)
-                            .flatMap(hasAccess -> {
-                                if (!hasAccess) {
-                                    log.warn("Access denied for resource type: {}, resourceId: {}, user: {} with roles {}", 
-                                            resourceType, finalResourceId, authInfo.getPartyId(), authInfo.getRoles());
-                                    return Mono.error(new AccessDeniedException("Access denied to resource: '" + resourceType + "' with id: '" + finalResourceId + "'"));
-                                }
-
-                                log.debug("Access granted for resource type: {}, resourceId: {}, user: {}", resourceType, finalResourceId, authInfo.getPartyId());
-
-                                try {
-                                    // Proceed with the method execution
-                                    Object result = joinPoint.proceed();
-                                    return handleResult(result);
-                                } catch (Throwable e) {
-                                    return Mono.error(e);
-                                }
-                            });
-                })
-                .onErrorMap(e -> {
-                    if (e instanceof AccessDeniedException) {
-                        return e;
-                    }
-                    log.error("Error checking access", e);
-                    return new RuntimeException("Error checking access", e);
                 });
     }
 

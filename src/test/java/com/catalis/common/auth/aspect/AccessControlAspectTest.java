@@ -1,6 +1,6 @@
 package com.catalis.common.auth.aspect;
 
-import com.catalis.common.auth.annotation.CheckAccess;
+import com.catalis.common.auth.annotation.RequiresOwnership;
 import com.catalis.common.auth.model.AuthDetails;
 import com.catalis.common.auth.model.AuthInfo;
 import com.catalis.common.auth.service.AccessValidationService;
@@ -33,13 +33,13 @@ class AccessControlAspectTest {
     @Mock
     private AccessValidationService accessValidationService;
 
-    private AccessControlAspect aspect;
+    private SecurityInterceptor interceptor;
     private TestService testService;
     private TestService proxiedService;
 
     @BeforeEach
     void setUp() {
-        aspect = new AccessControlAspect(accessValidationService);
+        interceptor = new SecurityInterceptor(accessValidationService);
 
         // Create the test service
         testService = new TestService();
@@ -47,8 +47,8 @@ class AccessControlAspectTest {
         // Create a proxy factory
         AspectJProxyFactory factory = new AspectJProxyFactory(testService);
 
-        // Add the aspect
-        factory.addAspect(aspect);
+        // Add the interceptor
+        factory.addAspect(interceptor);
 
         // Create the proxy
         proxiedService = factory.getProxy();
@@ -75,7 +75,7 @@ class AccessControlAspectTest {
         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
 
         // Mock the validation service
-        when(accessValidationService.validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class)))
+        when(accessValidationService.validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class)))
                 .thenReturn(Mono.just(true));
 
         // When
@@ -87,7 +87,7 @@ class AccessControlAspectTest {
                 .expectNext("Contract: " + contractId)
                 .verifyComplete();
 
-        verify(accessValidationService).validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class));
+        verify(accessValidationService).validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class));
     }
 
     @Test
@@ -111,7 +111,7 @@ class AccessControlAspectTest {
         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
 
         // Mock the validation service
-        when(accessValidationService.validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class)))
+        when(accessValidationService.validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class)))
                 .thenReturn(Mono.just(false));
 
         // When
@@ -123,7 +123,7 @@ class AccessControlAspectTest {
                 .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(accessValidationService).validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class));
+        verify(accessValidationService).validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class));
     }
 
     @Test
@@ -147,7 +147,7 @@ class AccessControlAspectTest {
         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
 
         // Mock the validation service
-        when(accessValidationService.validateAccess(eq("account"), eq(accountId), any(AuthInfo.class)))
+        when(accessValidationService.validateAccess(eq("account-example"), eq(accountId), any(AuthInfo.class)))
                 .thenReturn(Mono.just(true));
 
         // When
@@ -159,18 +159,18 @@ class AccessControlAspectTest {
                 .expectNext("Account: " + accountId)
                 .verifyComplete();
 
-        verify(accessValidationService).validateAccess(eq("account"), eq(accountId), any(AuthInfo.class));
+        verify(accessValidationService).validateAccess(eq("account-example"), eq(accountId), any(AuthInfo.class));
     }
 
-    // Test service with methods annotated with @CheckAccess
+    // Test service with methods annotated with @RequiresOwnership
     static class TestService {
 
-        @CheckAccess(resource = "contract", idParam = "contractId")
+        @RequiresOwnership(resource = "contract-example", paramName = "contractId")
         public Mono<String> getContractById(String contractId) {
             return Mono.just("Contract: " + contractId);
         }
 
-        @CheckAccess(resource = "account", idParam = "accountId")
+        @RequiresOwnership(resource = "account-example", paramName = "accountId", bypassForBackoffice = false)
         public Mono<String> getAccountById(String accountId) {
             return Mono.just("Account: " + accountId);
         }

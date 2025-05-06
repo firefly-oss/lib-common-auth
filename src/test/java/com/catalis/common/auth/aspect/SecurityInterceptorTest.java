@@ -197,7 +197,7 @@ class SecurityInterceptorTest {
         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
 
         // Mock the validation service
-        when(accessValidationService.validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class)))
+        when(accessValidationService.validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class)))
                 .thenReturn(Mono.just(true));
 
         // When
@@ -209,7 +209,7 @@ class SecurityInterceptorTest {
                 .expectNext("Contract: " + contractId)
                 .verifyComplete();
 
-        verify(accessValidationService).validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class));
+        verify(accessValidationService).validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class));
     }
 
     @Test
@@ -233,7 +233,7 @@ class SecurityInterceptorTest {
         ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
 
         // Mock the validation service
-        when(accessValidationService.validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class)))
+        when(accessValidationService.validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class)))
                 .thenReturn(Mono.just(false));
 
         // When
@@ -245,7 +245,7 @@ class SecurityInterceptorTest {
                 .expectError(AccessDeniedException.class)
                 .verify();
 
-        verify(accessValidationService).validateAccess(eq("contract"), eq(contractId), any(AuthInfo.class));
+        verify(accessValidationService).validateAccess(eq("contract-example"), eq(contractId), any(AuthInfo.class));
     }
 
     @Test
@@ -383,7 +383,7 @@ class SecurityInterceptorTest {
             return Mono.just("Read contract method");
         }
 
-        @RequiresOwnership(resource = "contract", paramName = "contractId")
+        @RequiresOwnership(resource = "contract-example", paramName = "contractId")
         public Mono<String> getContractById(String contractId) {
             return Mono.just("Contract: " + contractId);
         }
