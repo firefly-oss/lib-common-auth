@@ -74,7 +74,7 @@ The following diagram shows the main components of the Firefly Authorization Lib
 │ │  │  │ @PreAuthorize   │     │                      │                         │  │ │
 │ │  │  └─────────────────┘     │                      │                         │  │ │
 │ │  │                          │                      │                         │  │ │
-│ │  │  ┌─────────────────┐     │    ┌─────────────────▼───────────────────┐     │  │ │
+│ │  │  ┌─────────────────┐     │    ┌─────────────────▼──────────────────┐      │  │ │
 │ │  │  │    Service      │     │    │                                    │      │  │ │
 │ │  │  │                 │     │    │              AuthInfo              │      │  │ │
 │ │  │  │ @RequiresRole   │     │    │                                    │      │  │ │
