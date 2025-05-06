@@ -24,7 +24,7 @@ class ContractAccessValidatorTest {
         String resourceName = validator.getResourceName();
 
         // Then
-        org.junit.jupiter.api.Assertions.assertEquals("contract", resourceName);
+        org.junit.jupiter.api.Assertions.assertEquals("contract-example", resourceName);
     }
 
     @Test

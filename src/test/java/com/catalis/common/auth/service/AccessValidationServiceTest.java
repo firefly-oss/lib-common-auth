@@ -43,7 +43,7 @@ class AccessValidationServiceTest {
                 .build();
 
         // When
-        Mono<Boolean> result = accessValidationService.validateAccess("contract", "contract123", authInfo);
+        Mono<Boolean> result = accessValidationService.validateAccess("contract-example", "contract123", authInfo);
 
         // Then
         StepVerifier.create(result)
@@ -63,7 +63,7 @@ class AccessValidationServiceTest {
         when(validatorRegistry.getValidator(anyString())).thenReturn(null);
 
         // When
-        Mono<Boolean> result = accessValidationService.validateAccess("contract", "contract123", authInfo);
+        Mono<Boolean> result = accessValidationService.validateAccess("contract-example", "contract123", authInfo);
 
         // Then
         StepVerifier.create(result)
@@ -80,11 +80,11 @@ class AccessValidationServiceTest {
                 .scopes(Collections.emptySet())
                 .build();
 
-        when(validatorRegistry.getValidator(eq("contract"))).thenReturn(validator);
+        when(validatorRegistry.getValidator(eq("contract-example"))).thenReturn(validator);
         when(validator.canAccess(eq("contract123"), eq(authInfo))).thenReturn(Mono.just(true));
 
         // When
-        Mono<Boolean> result = accessValidationService.validateAccess("contract", "contract123", authInfo);
+        Mono<Boolean> result = accessValidationService.validateAccess("contract-example", "contract123", authInfo);
 
         // Then
         StepVerifier.create(result)
@@ -101,11 +101,11 @@ class AccessValidationServiceTest {
                 .scopes(Collections.emptySet())
                 .build();
 
-        when(validatorRegistry.getValidator(eq("contract"))).thenReturn(validator);
+        when(validatorRegistry.getValidator(eq("contract-example"))).thenReturn(validator);
         when(validator.canAccess(eq("contract123"), eq(authInfo))).thenReturn(Mono.just(false));
 
         // When
-        Mono<Boolean> result = accessValidationService.validateAccess("contract", "contract123", authInfo);
+        Mono<Boolean> result = accessValidationService.validateAccess("contract-example", "contract123", authInfo);
 
         // Then
         StepVerifier.create(result)

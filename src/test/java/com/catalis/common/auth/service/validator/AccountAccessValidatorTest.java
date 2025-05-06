@@ -24,7 +24,7 @@ class AccountAccessValidatorTest {
         String resourceName = validator.getResourceName();
 
         // Then
-        org.junit.jupiter.api.Assertions.assertEquals("account", resourceName);
+        org.junit.jupiter.api.Assertions.assertEquals("account-example", resourceName);
     }
 
     @Test

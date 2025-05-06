@@ -12,13 +12,13 @@ import reactor.core.publisher.Mono;
  * This validator checks if the user is the owner of the contract.
  */
 @Component
-@AccessValidatorFor("contract")
+@AccessValidatorFor("contract-example")
 @Slf4j
 public class ContractAccessValidator implements AccessValidator {
 
     @Override
     public String getResourceName() {
-        return "contract";
+        return "contract-example";
     }
 
     @Override

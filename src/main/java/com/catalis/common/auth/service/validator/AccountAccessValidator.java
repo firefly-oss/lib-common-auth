@@ -12,13 +12,13 @@ import reactor.core.publisher.Mono;
  * This validator checks if the user is the owner of the account.
  */
 @Component
-@AccessValidatorFor("account")
+@AccessValidatorFor("account-example")
 @Slf4j
 public class AccountAccessValidator implements AccessValidator {
 
     @Override
     public String getResourceName() {
-        return "account";
+        return "account-example";
     }
 
     @Override

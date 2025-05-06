@@ -33,8 +33,8 @@ class AccessValidatorRegistryTest {
     @BeforeEach
     void setUp() {
         // Create mock validators
-        when(contractValidator.getResourceName()).thenReturn("contract");
-        when(accountValidator.getResourceName()).thenReturn("account");
+        when(contractValidator.getResourceName()).thenReturn("contract-example");
+        when(accountValidator.getResourceName()).thenReturn("account-example");
 
         // Create a map of validators
         Map<String, AccessValidator> validators = new HashMap<>();
@@ -52,15 +52,15 @@ class AccessValidatorRegistryTest {
     @Test
     void shouldRegisterValidatorsOnInit() {
         // Then
-        assertTrue(registry.hasValidator("contract"));
-        assertTrue(registry.hasValidator("account"));
+        assertTrue(registry.hasValidator("contract-example"));
+        assertTrue(registry.hasValidator("account-example"));
         assertFalse(registry.hasValidator("nonexistent"));
     }
 
     @Test
     void shouldGetValidatorByResourceType() {
         // When
-        AccessValidator validator = registry.getValidator("contract");
+        AccessValidator validator = registry.getValidator("contract-example");
 
         // Then
         assertNotNull(validator);
