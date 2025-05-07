@@ -25,11 +25,6 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
         "com.catalis.common.auth.service",
         "com.catalis.common.auth.service.validator"
 })
-@Order(99)
-@AutoConfigureBefore({
-        ReactiveSecurityAutoConfiguration.class,
-        ReactiveUserDetailsServiceAutoConfiguration.class
-})
 public class AuthAutoConfiguration {
 
     /**
@@ -41,6 +36,7 @@ public class AuthAutoConfiguration {
      * @return the configured SecurityWebFilterChain
      */
     @Bean
+    @Order(99)
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
