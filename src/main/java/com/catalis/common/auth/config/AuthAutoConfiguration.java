@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -24,6 +25,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
     "com.catalis.common.auth.service",
     "com.catalis.common.auth.service.validator"
 })
+@Order(99) // Add this annotation to control precedence
 public class AuthAutoConfiguration {
 
     /**
@@ -38,10 +40,11 @@ public class AuthAutoConfiguration {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
-                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-                .logout(ServerHttpSecurity.LogoutSpec::disable)
-                .authorizeExchange(authorizeExchange -> authorizeExchange
+                .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)  // Disables HTTP Basic Auth
+                .formLogin(ServerHttpSecurity.FormLoginSpec::disable)  // Disables form login
+                .logout(ServerHttpSecurity.LogoutSpec::disable)        // Disables logout endpoint
+                .authorizeExchange(exchanges -> exchanges
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
                         .anyExchange().permitAll())
                 .build();
     }
