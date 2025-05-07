@@ -5,10 +5,7 @@ import com.catalis.common.auth.filter.AuthContextWebFilter;
 import com.catalis.common.auth.service.AccessValidationService;
 import com.catalis.common.auth.service.AccessValidatorRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -18,6 +15,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
  * This class configures Spring Security and enables the aspect-oriented programming (AOP) features.
  */
 @Configuration
+@EnableWebFluxSecurity
 @EnableAspectJAutoProxy
 @ComponentScan(basePackages = {
         "com.catalis.common.auth.service",
@@ -34,6 +32,7 @@ public class AuthAutoConfiguration {
      * @return the configured SecurityWebFilterChain
      */
     @Bean
+    @Primary
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
