@@ -37,6 +37,7 @@ public class AuthAutoConfiguration {
      * @return the configured SecurityWebFilterChain
      */
     @Bean
+    @ConditionalOnMissingBean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
