@@ -18,7 +18,6 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
  * This class configures Spring Security and enables the aspect-oriented programming (AOP) features.
  */
 @Configuration
-@EnableWebFluxSecurity
 @EnableAspectJAutoProxy
 @ComponentScan(basePackages = {
         "com.catalis.common.auth.service",
