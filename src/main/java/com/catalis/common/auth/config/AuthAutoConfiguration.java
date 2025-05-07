@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.context.annotation.*;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -24,6 +25,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
         "com.catalis.common.auth.service",
         "com.catalis.common.auth.service.validator"
 })
+@Order(99)
 @AutoConfigureBefore({
         ReactiveSecurityAutoConfiguration.class,
         ReactiveUserDetailsServiceAutoConfiguration.class
@@ -39,7 +41,6 @@ public class AuthAutoConfiguration {
      * @return the configured SecurityWebFilterChain
      */
     @Bean
-    @Primary
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
