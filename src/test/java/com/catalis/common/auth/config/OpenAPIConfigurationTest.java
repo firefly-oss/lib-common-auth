@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Import(OpenAPIConfiguration.class)
-@ActiveProfiles("test")
 class OpenAPIConfigurationTest {
 
     @Autowired
