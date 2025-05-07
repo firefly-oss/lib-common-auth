@@ -9,7 +9,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
@@ -22,10 +21,9 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 @EnableAspectJAutoProxy
 @ComponentScan(basePackages = {
-    "com.catalis.common.auth.service",
-    "com.catalis.common.auth.service.validator"
+        "com.catalis.common.auth.service",
+        "com.catalis.common.auth.service.validator"
 })
-@Order(99) // Add this annotation to control precedence
 public class AuthAutoConfiguration {
 
     /**
@@ -37,7 +35,6 @@ public class AuthAutoConfiguration {
      * @return the configured SecurityWebFilterChain
      */
     @Bean
-    @ConditionalOnMissingBean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
