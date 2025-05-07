@@ -44,9 +44,10 @@ public class AuthAutoConfiguration {
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)  // Disables HTTP Basic Auth
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)  // Disables form login
                 .logout(ServerHttpSecurity.LogoutSpec::disable)        // Disables logout endpoint
+                .anonymous(ServerHttpSecurity.AnonymousSpec::disable)  // Disables anonymous authentication
+                .requestCache(ServerHttpSecurity.RequestCacheSpec::disable) // Disables request cache
                 .authorizeExchange(exchanges -> exchanges
-                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
-                        .anyExchange().permitAll())
+                        .anyExchange().permitAll())  // Permit all requests without authentication
                 .build();
     }
 
