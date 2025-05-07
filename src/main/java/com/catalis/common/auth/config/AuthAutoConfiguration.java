@@ -4,7 +4,10 @@ import com.catalis.common.auth.aspect.AccessControlAspect;
 import com.catalis.common.auth.filter.AuthContextWebFilter;
 import com.catalis.common.auth.service.AccessValidationService;
 import com.catalis.common.auth.service.AccessValidatorRegistry;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
+import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
 import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -20,6 +23,10 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @ComponentScan(basePackages = {
         "com.catalis.common.auth.service",
         "com.catalis.common.auth.service.validator"
+})
+@AutoConfigureBefore({
+        ReactiveSecurityAutoConfiguration.class,
+        ReactiveUserDetailsServiceAutoConfiguration.class
 })
 public class AuthAutoConfiguration {
 
