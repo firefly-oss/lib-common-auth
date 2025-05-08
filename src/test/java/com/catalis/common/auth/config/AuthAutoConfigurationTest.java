@@ -21,7 +21,6 @@ class AuthAutoConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner();
 
     @Test
-    @Disabled
     void shouldCreateDefaultBeans() {
         contextRunner
                 .withConfiguration(AutoConfigurations.of(AuthAutoConfiguration.class))
@@ -35,7 +34,6 @@ class AuthAutoConfigurationTest {
     }
 
     @Test
-    @Disabled
     void shouldNotOverrideExistingBeans() {
         contextRunner
                 .withUserConfiguration(TestConfig.class)

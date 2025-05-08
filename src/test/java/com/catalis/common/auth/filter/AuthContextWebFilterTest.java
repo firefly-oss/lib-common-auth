@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import org.springframework.web.server.WebFilterChain;
+
 class AuthContextWebFilterTest {
 
     @Test
@@ -107,7 +109,7 @@ class AuthContextWebFilterTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenPartyIdIsMissingForCustomer() {
+    void shouldReturnEmptyWhenAllIdHeadersAreMissing() {
         // Given
         AuthContextWebFilter filter = new AuthContextWebFilter();
 
@@ -126,21 +128,54 @@ class AuthContextWebFilterTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenEmployeeIdIsMissingForEmployee() {
+    void shouldCreateAuthenticationWhenAnyIdHeaderIsProvided() {
         // Given
         AuthContextWebFilter filter = new AuthContextWebFilter();
 
-        MockServerHttpRequest request = MockServerHttpRequest.get("/test")
-                .header("X-Auth-Roles", "ADMIN")
+        // Test with only Party ID
+        MockServerHttpRequest requestWithPartyId = MockServerHttpRequest.get("/test")
+                .header("X-Party-ID", "user123")
+                .header("X-Auth-Roles", "ADMIN") // Role doesn't match the ID type
                 .build();
 
-        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+        MockServerWebExchange exchangeWithPartyId = MockServerWebExchange.from(requestWithPartyId);
 
-        // When
-        Mono<Authentication> authMono = filter.createAuthentication(exchange);
+        // Test with only Employee ID
+        MockServerHttpRequest requestWithEmployeeId = MockServerHttpRequest.get("/test")
+                .header("X-Employee-ID", "emp123")
+                .header("X-Auth-Roles", "CUSTOMER") // Role doesn't match the ID type
+                .build();
 
-        // Then
-        StepVerifier.create(authMono)
+        MockServerWebExchange exchangeWithEmployeeId = MockServerWebExchange.from(requestWithEmployeeId);
+
+        // Test with only Service Account ID
+        MockServerHttpRequest requestWithServiceId = MockServerHttpRequest.get("/test")
+                .header("X-Service-Account-ID", "service123")
+                .header("X-Auth-Roles", "CUSTOMER") // Role doesn't match the ID type
+                .build();
+
+        MockServerWebExchange exchangeWithServiceId = MockServerWebExchange.from(requestWithServiceId);
+
+        // When & Then - All should create authentication
+        StepVerifier.create(filter.createAuthentication(exchangeWithPartyId))
+                .assertNext(auth -> {
+                    assertNotNull(auth);
+                    assertEquals("user123", auth.getName());
+                })
+                .verifyComplete();
+
+        StepVerifier.create(filter.createAuthentication(exchangeWithEmployeeId))
+                .assertNext(auth -> {
+                    assertNotNull(auth);
+                    assertEquals("emp123", auth.getName());
+                })
+                .verifyComplete();
+
+        StepVerifier.create(filter.createAuthentication(exchangeWithServiceId))
+                .assertNext(auth -> {
+                    assertNotNull(auth);
+                    assertEquals("service123", auth.getName());
+                })
                 .verifyComplete();
     }
 
@@ -260,12 +295,16 @@ class AuthContextWebFilterTest {
     }
 
     @Test
-    void shouldReturnEmptyWhenServiceAccountIdIsMissingForServiceAccount() {
+    void shouldCreateAuthenticationWithMultipleIdHeaders() {
         // Given
         AuthContextWebFilter filter = new AuthContextWebFilter();
 
+        // Test with multiple ID headers
         MockServerHttpRequest request = MockServerHttpRequest.get("/test")
-                .header("X-Auth-Roles", "SERVICE_ACCOUNT")
+                .header("X-Party-ID", "user123")
+                .header("X-Employee-ID", "emp123")
+                .header("X-Service-Account-ID", "service123")
+                .header("X-Auth-Roles", "CUSTOMER,ADMIN,SERVICE_ACCOUNT")
                 .build();
 
         MockServerWebExchange exchange = MockServerWebExchange.from(request);
@@ -273,8 +312,27 @@ class AuthContextWebFilterTest {
         // When
         Mono<Authentication> authMono = filter.createAuthentication(exchange);
 
-        // Then
+        // Then - Should use the principal based on role priority (service account > employee > customer)
         StepVerifier.create(authMono)
+                .assertNext(auth -> {
+                    assertNotNull(auth);
+
+                    // Principal should be set based on role priority
+                    assertEquals("service123", auth.getName());
+
+                    // All roles should be included
+                    List<String> authorities = auth.getAuthorities().stream()
+                            .map(GrantedAuthority::getAuthority)
+                            .collect(Collectors.toList());
+                    assertTrue(authorities.contains("ROLE_CUSTOMER"));
+                    assertTrue(authorities.contains("ROLE_ADMIN"));
+                    assertTrue(authorities.contains("ROLE_SERVICE_ACCOUNT"));
+
+                    // All IDs should be in the details
+                    AuthDetails details = (AuthDetails) auth.getDetails();
+                    assertEquals("emp123", details.getEmployeeId());
+                    assertEquals("service123", details.getServiceAccountId());
+                })
                 .verifyComplete();
     }
 
@@ -315,5 +373,29 @@ class AuthContextWebFilterTest {
                     assertEquals("service123", details.getServiceAccountId());
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void shouldFilterExcludedPathsWithoutRequiredHeaders() {
+        // Given
+        AuthContextWebFilter filter = new AuthContextWebFilter();
+        WebFilterChain chain = mock(WebFilterChain.class);
+
+        when(chain.filter(any())).thenReturn(Mono.empty());
+
+        // Test with swagger-ui path
+        MockServerHttpRequest request = MockServerHttpRequest.get("/swagger-ui")
+                .header("X-Auth-Roles", "CUSTOMER") // Only role, no party ID
+                .build();
+
+        MockServerWebExchange exchange = MockServerWebExchange.from(request);
+
+        // When
+        filter.filter(exchange, chain).block();
+
+        // Then - should call the filter chain at least once
+        // Note: We're using any() instead of the exact exchange object because
+        // the filter now decorates the exchange with a response decorator
+        verify(chain, atLeastOnce()).filter(any());
     }
 }

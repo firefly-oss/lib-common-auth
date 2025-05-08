@@ -5,6 +5,7 @@ import com.catalis.common.auth.filter.AuthContextWebFilter;
 import com.catalis.common.auth.service.AccessValidationService;
 import com.catalis.common.auth.service.AccessValidatorRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.reactive.ReactiveUserDetailsServiceAutoConfiguration;
