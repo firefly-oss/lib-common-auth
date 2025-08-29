@@ -413,7 +413,7 @@ Add the following dependency to your `pom.xml`:
 
 ```xml
 <dependency>
-    <groupId>com.catalis</groupId>
+    <groupId>com.firefly</groupId>
     <artifactId>lib-common-auth</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 </dependency>
@@ -428,7 +428,7 @@ The library is auto-configured when added as a dependency. No additional configu
 ### 2. Access the current authentication information
 
 ```java
-import com.catalis.common.auth.model.AuthInfo;
+import com.firefly.common.auth.model.AuthInfo;
 import reactor.core.publisher.Mono;
 
 public class MyService {
@@ -472,7 +472,7 @@ public class MyService {
 #### Role-based access control
 
 ```java
-import com.catalis.common.auth.annotation.RequiresRole;
+import com.firefly.common.auth.annotation.RequiresRole;
 import reactor.core.publisher.Mono;
 
 public class AdminService {
@@ -512,7 +512,7 @@ public class AdminService {
 #### Scope-based access control
 
 ```java
-import com.catalis.common.auth.annotation.RequiresScope;
+import com.firefly.common.auth.annotation.RequiresScope;
 import reactor.core.publisher.Mono;
 
 public class ContractService {
@@ -534,7 +534,7 @@ public class ContractService {
 #### Ownership-based access control
 
 ```java
-import com.catalis.common.auth.annotation.RequiresOwnership;
+import com.firefly.common.auth.annotation.RequiresOwnership;
 import reactor.core.publisher.Mono;
 
 public class ContractService {
@@ -563,7 +563,7 @@ public class ContractService {
 #### Expression-based access control
 
 ```java
-import com.catalis.common.auth.annotation.RequiresExpression;
+import com.firefly.common.auth.annotation.RequiresExpression;
 import reactor.core.publisher.Mono;
 
 public class ContractService {
@@ -594,7 +594,7 @@ public class ContractService {
 #### Spring Security-style access control
 
 ```java
-import com.catalis.common.auth.annotation.PreAuthorize;
+import com.firefly.common.auth.annotation.PreAuthorize;
 import reactor.core.publisher.Mono;
 
 public class ContractService {
@@ -766,9 +766,9 @@ Here's a step-by-step guide to creating a custom validator for a new resource ty
 1. **Create a new class that implements the `AccessValidator` interface**:
 
 ```java
-import com.catalis.common.auth.annotation.AccessValidatorFor;
-import com.catalis.common.auth.model.AuthInfo;
-import com.catalis.common.auth.service.AccessValidator;
+import com.firefly.common.auth.annotation.AccessValidatorFor;
+import com.firefly.common.auth.model.AuthInfo;
+import com.firefly.common.auth.service.AccessValidator;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -1731,7 +1731,7 @@ public class CustomOpenAPIConfiguration {
 
 1. **Enable Debug Logging**: Add the following to your application.properties or application.yml to enable debug logging for the library:
    ```properties
-   logging.level.com.catalis.common.auth=DEBUG
+   logging.level.com.firefly.common.auth=DEBUG
    ```
 
 2. **Inspect Authentication**: Use `AuthInfo.getCurrent()` to inspect the current authentication information. For example:
