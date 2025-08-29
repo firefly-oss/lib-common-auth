@@ -1,2 +1,2 @@
-com.catalis.common.auth.config.AuthAutoConfiguration
-com.catalis.common.auth.config.openapi.OpenAPIConfiguration
+com.firefly.common.auth.config.AuthAutoConfiguration
+com.firefly.common.auth.config.openapi.OpenAPIConfiguration
