@@ -38,7 +38,9 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.reactivestreams.Publisher;
 
@@ -51,6 +53,7 @@ import org.reactivestreams.Publisher;
  * - X-Auth-Roles: roles of the subject (CUSTOMER, ADMIN, CUSTOMER_SUPPORT, SUPERVISOR, MANAGER, BRANCH_STAFF, SERVICE_ACCOUNT), comma-separated
  * - X-Auth-Scopes: OAuth2 scopes like contracts.read, accounts.write, comma-separated
  * - X-Request-ID: for traceability
+ * - X-Auth-Metadata-*: custom metadata headers (e.g., X-Auth-Metadata-Department, X-Auth-Metadata-Branch)
  */
 @Component
 @Order(1) // High priority to ensure it's executed before other filters
@@ -63,6 +66,7 @@ public class AuthContextWebFilter implements WebFilter {
     private static final String ROLES_HEADER = "X-Auth-Roles";
     private static final String SCOPES_HEADER = "X-Auth-Scopes";
     private static final String REQUEST_ID_HEADER = "X-Request-ID";
+    private static final String METADATA_HEADER_PREFIX = "X-Auth-Metadata-";
 
     // Paths that should be excluded from header validation
     private static final List<String> EXCLUDED_PATHS = Arrays.asList(
@@ -101,9 +105,12 @@ public class AuthContextWebFilter implements WebFilter {
         String scopes = exchange.getRequest().getHeaders().getFirst(SCOPES_HEADER);
         String requestId = exchange.getRequest().getHeaders().getFirst(REQUEST_ID_HEADER);
 
+        // Extract metadata headers (X-Auth-Metadata-*)
+        Map<String, Object> metadata = extractMetadataHeaders(exchange);
+
         // Log headers for debugging
-        log.info("Headers: partyId={}, employeeId={}, serviceAccountId={}, roles={}, scopes={}, requestId={}", 
-                 partyId, employeeId, serviceAccountId, roles, scopes, requestId);
+        log.info("Headers: partyId={}, employeeId={}, serviceAccountId={}, roles={}, scopes={}, requestId={}, metadata={}",
+                 partyId, employeeId, serviceAccountId, roles, scopes, requestId, metadata);
 
         // Parse roles to determine user type
         boolean isEmployee = false;
@@ -154,11 +161,12 @@ public class AuthContextWebFilter implements WebFilter {
             );
         }
 
-        // Create authentication details with request ID, employee ID, and service account ID
+        // Create authentication details with request ID, employee ID, service account ID, and metadata
         AuthDetails authDetails = AuthDetails.builder()
                 .requestId(requestId != null ? requestId : "")
                 .employeeId(employeeId != null ? employeeId : "")
                 .serviceAccountId(serviceAccountId != null ? serviceAccountId : "")
+                .metadata(metadata)
                 .build();
 
         // Create authentication object with appropriate principal based on available ID headers
@@ -274,5 +282,80 @@ public class AuthContextWebFilter implements WebFilter {
         return createAuthentication(exchange)
                 .flatMap(authentication -> processThroughFilterChain(exchange, chain, authentication))
                 .switchIfEmpty(chain.filter(exchange));
+    }
+
+    /**
+     * Extracts metadata from headers that start with the metadata prefix.
+     * Headers like "X-Auth-Metadata-Department" become metadata entries with key "Department".
+     *
+     * @param exchange the server web exchange
+     * @return a map containing the extracted metadata
+     */
+    private Map<String, Object> extractMetadataHeaders(ServerWebExchange exchange) {
+        Map<String, Object> metadata = new HashMap<>();
+
+        exchange.getRequest().getHeaders().forEach((headerName, headerValues) -> {
+            if (headerName.startsWith(METADATA_HEADER_PREFIX)) {
+                // Extract the metadata key by removing the prefix
+                String metadataKey = headerName.substring(METADATA_HEADER_PREFIX.length());
+
+                // Use the first value if multiple values are present
+                if (!headerValues.isEmpty()) {
+                    String value = headerValues.get(0);
+
+                    // Try to parse as different types
+                    Object parsedValue = parseMetadataValue(value);
+                    metadata.put(metadataKey, parsedValue);
+
+                    log.debug("Extracted metadata: {} = {}", metadataKey, parsedValue);
+                }
+            }
+        });
+
+        return metadata;
+    }
+
+    /**
+     * Attempts to parse a metadata value into the most appropriate type.
+     * Tries to parse as Boolean, Integer, or keeps as String.
+     *
+     * @param value the string value to parse
+     * @return the parsed value as the most appropriate type
+     */
+    private Object parseMetadataValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return value;
+        }
+
+        String trimmedValue = value.trim();
+
+        // Try to parse as boolean
+        if ("true".equalsIgnoreCase(trimmedValue) || "false".equalsIgnoreCase(trimmedValue)) {
+            return Boolean.parseBoolean(trimmedValue);
+        }
+
+        // Try to parse as integer
+        try {
+            return Integer.parseInt(trimmedValue);
+        } catch (NumberFormatException e) {
+            // Not an integer, continue
+        }
+
+        // Try to parse as long
+        try {
+            return Long.parseLong(trimmedValue);
+        } catch (NumberFormatException e) {
+            // Not a long, continue
+        }
+
+        // Try to parse as double
+        try {
+            return Double.parseDouble(trimmedValue);
+        } catch (NumberFormatException e) {
+            // Not a double, continue
+        }
+
+        // Return as string if no other type matches
+        return value;
     }
 }
