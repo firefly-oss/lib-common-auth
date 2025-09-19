@@ -20,6 +20,9 @@ package com.firefly.common.auth.model;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -312,5 +315,251 @@ class AuthInfoTest {
 
         // Then
         assertFalse(hasAllScopes);
+    }
+
+    // ========== Metadata Tests ==========
+
+    @Test
+    void getMetadata_shouldReturnValueWhenKeyExists() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+        metadata.put("level", 5);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<Object> department = authInfo.getMetadata("department");
+        Optional<Object> level = authInfo.getMetadata("level");
+
+        // Then
+        assertTrue(department.isPresent());
+        assertEquals("IT", department.get());
+        assertTrue(level.isPresent());
+        assertEquals(5, level.get());
+    }
+
+    @Test
+    void getMetadata_shouldReturnEmptyWhenKeyDoesNotExist() {
+        // Given
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(Collections.emptyMap())
+                .build();
+
+        // When
+        Optional<Object> result = authInfo.getMetadata("nonexistent");
+
+        // Then
+        assertFalse(result.isPresent());
+    }
+
+    @Test
+    void getMetadataWithType_shouldReturnTypedValueWhenCorrectType() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+        metadata.put("level", 5);
+        metadata.put("active", true);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<String> department = authInfo.getMetadata("department", String.class);
+        Optional<Integer> level = authInfo.getMetadata("level", Integer.class);
+        Optional<Boolean> active = authInfo.getMetadata("active", Boolean.class);
+
+        // Then
+        assertTrue(department.isPresent());
+        assertEquals("IT", department.get());
+        assertTrue(level.isPresent());
+        assertEquals(Integer.valueOf(5), level.get());
+        assertTrue(active.isPresent());
+        assertEquals(Boolean.TRUE, active.get());
+    }
+
+    @Test
+    void getMetadataWithType_shouldReturnEmptyWhenWrongType() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("level", 5);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<String> levelAsString = authInfo.getMetadata("level", String.class);
+
+        // Then
+        assertFalse(levelAsString.isPresent());
+    }
+
+    @Test
+    void getMetadataAsString_shouldReturnStringValue() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<String> department = authInfo.getMetadataAsString("department");
+
+        // Then
+        assertTrue(department.isPresent());
+        assertEquals("IT", department.get());
+    }
+
+    @Test
+    void getMetadataAsInteger_shouldReturnIntegerValue() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("level", 5);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<Integer> level = authInfo.getMetadataAsInteger("level");
+
+        // Then
+        assertTrue(level.isPresent());
+        assertEquals(Integer.valueOf(5), level.get());
+    }
+
+    @Test
+    void getMetadataAsBoolean_shouldReturnBooleanValue() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("active", true);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Optional<Boolean> active = authInfo.getMetadataAsBoolean("active");
+
+        // Then
+        assertTrue(active.isPresent());
+        assertEquals(Boolean.TRUE, active.get());
+    }
+
+    @Test
+    void hasMetadata_shouldReturnTrueWhenKeyExists() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        boolean hasDepartment = authInfo.hasMetadata("department");
+        boolean hasNonexistent = authInfo.hasMetadata("nonexistent");
+
+        // Then
+        assertTrue(hasDepartment);
+        assertFalse(hasNonexistent);
+    }
+
+    @Test
+    void getMetadataKeys_shouldReturnAllKeys() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+        metadata.put("level", 5);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        Set<String> keys = authInfo.getMetadataKeys();
+
+        // Then
+        assertEquals(2, keys.size());
+        assertTrue(keys.contains("department"));
+        assertTrue(keys.contains("level"));
+    }
+
+    @Test
+    void isMetadataEmpty_shouldReturnCorrectValue() {
+        // Given
+        AuthInfo emptyMetadata = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(Collections.emptyMap())
+                .build();
+
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+        AuthInfo withMetadata = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When & Then
+        assertTrue(emptyMetadata.isMetadataEmpty());
+        assertFalse(withMetadata.isMetadataEmpty());
+    }
+
+    @Test
+    void getMetadataSize_shouldReturnCorrectSize() {
+        // Given
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("department", "IT");
+        metadata.put("level", 5);
+
+        AuthInfo authInfo = AuthInfo.builder()
+                .partyId("user123")
+                .roles(Collections.emptySet())
+                .scopes(Collections.emptySet())
+                .metadata(metadata)
+                .build();
+
+        // When
+        int size = authInfo.getMetadataSize();
+
+        // Then
+        assertEquals(2, size);
     }
 }
