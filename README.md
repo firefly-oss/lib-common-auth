@@ -364,10 +364,15 @@ The library provides a pluggable/extensible validation mechanism for checking if
   - `getServiceAccountId()`: Gets the service account ID (for SERVICE_ACCOUNT role).
   - `getRoles()`: Gets all roles.
   - `getScopes()`: Gets all scopes.
+  - `getMetadata()`: Gets custom metadata map.
   - **Role Checking Methods**:
     - Basic: `isCustomer()`, `isEmployee()`, `isServiceAccount()`
     - Granular: `isAdmin()`, `isCustomerSupport()`, `isSupervisor()`, `isManager()`
     - Generic: `hasRole(role)`, `hasAnyRole(roles...)`, `hasAllRoles(roles...)`
+  - **Metadata Access Methods**:
+    - Generic: `getMetadata(key)`, `getMetadata(key, type)`, `hasMetadata(key)`
+    - Typed: `getMetadataAsString(key)`, `getMetadataAsInteger(key)`, `getMetadataAsBoolean(key)`
+    - Utility: `getMetadataKeys()`, `isMetadataEmpty()`, `getMetadataSize()`
 
 - **Security Annotations**: A set of annotations for securing methods with different access control rules.
   - **@RequiresRole**: Requires the user to have a specific role.
@@ -1746,6 +1751,129 @@ public class CustomOpenAPIConfiguration {
 3. **Test with Postman**: Use Postman to test your API with different headers to simulate different user types.
 
 4. **Write Unit Tests**: Write unit tests for your security rules to verify they work as expected.
+
+## Metadata Support
+
+The Firefly Authorization Library supports custom metadata that can be passed through HTTP headers and used in access control decisions. This feature allows for more sophisticated authorization rules based on additional user context.
+
+### How Metadata Works
+
+1. **Header Extraction**: The `AuthContextWebFilter` automatically extracts metadata from HTTP headers that start with `X-Auth-Metadata-`.
+2. **Type Parsing**: Metadata values are automatically parsed into appropriate types (String, Integer, Boolean, Double).
+3. **Access in Validators**: Metadata is available in `AuthInfo` and can be used in custom validators for access control decisions.
+
+### Sending Metadata Headers
+
+To send metadata, include headers with the prefix `X-Auth-Metadata-` followed by your metadata key:
+
+```http
+X-Auth-Metadata-Department: IT
+X-Auth-Metadata-Level: 5
+X-Auth-Metadata-Active: true
+X-Auth-Metadata-Score: 95.5
+X-Auth-Metadata-Branch: Main
+```
+
+### Accessing Metadata in Code
+
+The `AuthInfo` class provides several methods to access metadata:
+
+```java
+// Get metadata as Object
+Optional<Object> department = authInfo.getMetadata("Department");
+
+// Get metadata with type checking
+Optional<String> dept = authInfo.getMetadata("Department", String.class);
+
+// Get metadata as specific types
+Optional<String> department = authInfo.getMetadataAsString("Department");
+Optional<Integer> level = authInfo.getMetadataAsInteger("Level");
+Optional<Boolean> active = authInfo.getMetadataAsBoolean("Active");
+
+// Check if metadata exists
+boolean hasDepartment = authInfo.hasMetadata("Department");
+
+// Get all metadata keys
+Set<String> keys = authInfo.getMetadataKeys();
+
+// Check if metadata is empty
+boolean isEmpty = authInfo.isMetadataEmpty();
+
+// Get metadata size
+int size = authInfo.getMetadataSize();
+```
+
+### Using Metadata in Validators
+
+Here's an example of how to use metadata in a custom validator:
+
+```java
+@Component
+@AccessValidatorFor("enhanced-account")
+public class EnhancedAccountAccessValidator implements AccessValidator {
+
+    @Override
+    public Mono<Boolean> canAccess(String resourceId, AuthInfo authInfo) {
+        // Standard ownership check
+        if (authInfo.getPartyId().equals(resourceId)) {
+            return Mono.just(true);
+        }
+
+        // Department-based access
+        Optional<String> department = authInfo.getMetadataAsString("Department");
+        if (department.isPresent() && "FINANCE".equals(department.get())) {
+            return Mono.just(true);
+        }
+
+        // Level-based access
+        Optional<Integer> level = authInfo.getMetadataAsInteger("Level");
+        if (level.isPresent() && level.get() >= 8) {
+            return Mono.just(true);
+        }
+
+        // Branch-based access
+        Optional<String> userBranch = authInfo.getMetadataAsString("Branch");
+        if (userBranch.isPresent()) {
+            String accountBranch = getAccountBranch(resourceId);
+            if (userBranch.get().equals(accountBranch)) {
+                return Mono.just(true);
+            }
+        }
+
+        return Mono.just(false);
+    }
+}
+```
+
+### Metadata Type Parsing
+
+The library automatically parses metadata values into appropriate types:
+
+- **Boolean**: "true" or "false" (case-insensitive) → `Boolean`
+- **Integer**: Numeric values without decimals → `Integer`
+- **Long**: Large numeric values → `Long`
+- **Double**: Numeric values with decimals → `Double`
+- **String**: Everything else → `String`
+
+### Best Practices for Metadata
+
+1. **Use Descriptive Keys**: Use clear, descriptive names for your metadata keys (e.g., "Department", "Level", "Branch").
+
+2. **Keep It Simple**: Avoid complex nested structures. Use simple key-value pairs.
+
+3. **Validate in Validators**: Always check if metadata exists before using it in access control decisions.
+
+4. **Document Your Metadata**: Document what metadata your application expects and how it's used.
+
+5. **Security Considerations**: Remember that metadata comes from HTTP headers, so validate and sanitize as needed.
+
+### Example Use Cases
+
+- **Department-based Access**: Allow finance department users to access financial records.
+- **Level-based Access**: Grant access based on user clearance level.
+- **Geographic Access**: Restrict access based on user's region or branch.
+- **Time-based Access**: Use metadata to implement time-based access controls.
+- **Feature Flags**: Use boolean metadata to enable/disable features for specific users.
 
 ### Getting Help
 
