@@ -28,12 +28,14 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * Wrapper utility class that provides access to authentication information.
- * This class exposes methods to access the party ID, employee ID, service account ID, roles, and scopes of the authenticated user.
+ * This class exposes methods to access the party ID, employee ID, service account ID, roles, scopes, and metadata of the authenticated user.
  */
 @Data
 @Builder
@@ -46,6 +48,14 @@ public class AuthInfo {
     private final Set<String> roles;
     private final Set<String> scopes;
     private final String requestId;
+
+    /**
+     * Additional metadata that can be used to store custom authentication information.
+     * This map can contain any key-value pairs that provide additional context about the user.
+     * Examples: department, branch, region, permissions, etc.
+     */
+    @Builder.Default
+    private final Map<String, Object> metadata = Collections.emptyMap();
 
     /**
      * Gets the current AuthInfo from the ReactiveSecurityContextHolder.
@@ -63,6 +73,7 @@ public class AuthInfo {
                                 .roles(Collections.emptySet())
                                 .scopes(Collections.emptySet())
                                 .requestId("")
+                                .metadata(Collections.emptyMap())
                                 .build();
                     }
 
@@ -83,15 +94,17 @@ public class AuthInfo {
                     // Extract partyId from principal
                     String partyId = authentication.getName();
 
-                    // Extract requestId, employeeId, and serviceAccountId from details if available
+                    // Extract requestId, employeeId, serviceAccountId, and metadata from details if available
                     String requestId = "";
                     String employeeId = "";
                     String serviceAccountId = "";
+                    Map<String, Object> metadata = Collections.emptyMap();
                     if (authentication.getDetails() instanceof AuthDetails) {
                         AuthDetails details = (AuthDetails) authentication.getDetails();
                         requestId = details.getRequestId() != null ? details.getRequestId() : "";
                         employeeId = details.getEmployeeId() != null ? details.getEmployeeId() : "";
                         serviceAccountId = details.getServiceAccountId() != null ? details.getServiceAccountId() : "";
+                        metadata = details.getMetadata() != null ? details.getMetadata() : Collections.emptyMap();
                     }
 
                     return AuthInfo.builder()
@@ -101,6 +114,7 @@ public class AuthInfo {
                             .roles(roles)
                             .scopes(scopes)
                             .requestId(requestId)
+                            .metadata(metadata)
                             .build();
                 });
     }
@@ -250,5 +264,101 @@ public class AuthInfo {
             }
         }
         return true;
+    }
+
+    // ========== Metadata Utility Methods ==========
+
+    /**
+     * Gets a metadata value by key.
+     *
+     * @param key the metadata key
+     * @return an Optional containing the value if present, empty otherwise
+     */
+    public Optional<Object> getMetadata(String key) {
+        return Optional.ofNullable(metadata.get(key));
+    }
+
+    /**
+     * Gets a metadata value by key and casts it to the specified type.
+     *
+     * @param key the metadata key
+     * @param type the expected type of the value
+     * @param <T> the type parameter
+     * @return an Optional containing the typed value if present and of the correct type, empty otherwise
+     */
+    @SuppressWarnings("unchecked")
+    public <T> Optional<T> getMetadata(String key, Class<T> type) {
+        Object value = metadata.get(key);
+        if (value != null && type.isInstance(value)) {
+            return Optional.of((T) value);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Gets a metadata value by key as a String.
+     *
+     * @param key the metadata key
+     * @return an Optional containing the String value if present, empty otherwise
+     */
+    public Optional<String> getMetadataAsString(String key) {
+        return getMetadata(key, String.class);
+    }
+
+    /**
+     * Gets a metadata value by key as an Integer.
+     *
+     * @param key the metadata key
+     * @return an Optional containing the Integer value if present, empty otherwise
+     */
+    public Optional<Integer> getMetadataAsInteger(String key) {
+        return getMetadata(key, Integer.class);
+    }
+
+    /**
+     * Gets a metadata value by key as a Boolean.
+     *
+     * @param key the metadata key
+     * @return an Optional containing the Boolean value if present, empty otherwise
+     */
+    public Optional<Boolean> getMetadataAsBoolean(String key) {
+        return getMetadata(key, Boolean.class);
+    }
+
+    /**
+     * Checks if a metadata key exists.
+     *
+     * @param key the metadata key
+     * @return true if the key exists in metadata, false otherwise
+     */
+    public boolean hasMetadata(String key) {
+        return metadata.containsKey(key);
+    }
+
+    /**
+     * Gets all metadata keys.
+     *
+     * @return a Set containing all metadata keys
+     */
+    public Set<String> getMetadataKeys() {
+        return metadata.keySet();
+    }
+
+    /**
+     * Checks if metadata is empty.
+     *
+     * @return true if metadata is empty, false otherwise
+     */
+    public boolean isMetadataEmpty() {
+        return metadata.isEmpty();
+    }
+
+    /**
+     * Gets the size of metadata.
+     *
+     * @return the number of metadata entries
+     */
+    public int getMetadataSize() {
+        return metadata.size();
     }
 }

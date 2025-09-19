@@ -20,6 +20,9 @@ package com.firefly.common.auth.model;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Class to store additional authentication details.
  */
@@ -29,4 +32,12 @@ public class AuthDetails {
     private final String requestId;
     private final String employeeId;
     private final String serviceAccountId;
+
+    /**
+     * Additional metadata that can be used to store custom authentication information.
+     * This map can contain any key-value pairs that provide additional context about the user.
+     * Examples: department, branch, region, permissions, etc.
+     */
+    @Builder.Default
+    private final Map<String, Object> metadata = Collections.emptyMap();
 }
